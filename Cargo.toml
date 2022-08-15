@@ -1,0 +1,23 @@
+[package]
+name = "js-engine"
+version = "0.1.0"
+description = "Wrapper for the wrap link standard"
+authors = ["Polywrap"]
+repository = "https://github.com/nerfZael/js-engine-wrapper"
+license = "MIT"
+edition = "2021"
+
+[dependencies]
+polywrap-wasm-rs = { version = "0.1.1" }
+serde = { version = "1.0", features = ["derive"] }
+boa_engine = { features = ["console"], version = "0.15.0" }
+getrandom = { features = ["js"], version = "0.2.7" }
+wasm-bindgen = { version = "=0.2.82" }
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+opt-level = 's'
+lto = true
+panic = 'abort'

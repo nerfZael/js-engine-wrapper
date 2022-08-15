@@ -1,0 +1,8 @@
+type Module {
+    eval(src: String!): EvalResult!
+}
+
+type EvalResult {
+    value: JSON
+    error: String
+}

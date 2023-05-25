@@ -1,7 +1,9 @@
-format: 0.1.0
-name: js-engine
-language: wasm/rust
-build: ./polywrap.build.yaml
-deploy: ./polywrap.deploy.yaml
-module: ./Cargo.toml
-schema: ./src/schema.graphql
+format: 0.3.0
+project:
+  name: js-wrap
+  type: wasm/rust
+source:
+  module: ./Cargo.toml
+  schema: ./polywrap.graphql
+extensions:
+  build: ./polywrap.build.yaml

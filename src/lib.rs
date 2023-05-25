@@ -2,7 +2,13 @@ pub mod wrap;
 use JSON::json;
 use wrap::*;
 use polywrap_wasm_rs::{JSON};
-use boa_engine::{ Context, JsValue };
+use boa_engine::{ Context, JsValue, JsString };
+use boa_engine::{
+    native_function::NativeFunction, prelude::JsObject, property::Attribute, Context, JsResult,
+    JsValue, Source,
+};
+use std::fs::read_to_string;
+
 pub fn eval(args: ArgsEval) -> EvalResult {
     let js_code = args.src;
 
@@ -33,11 +39,60 @@ pub fn eval(args: ArgsEval) -> EvalResult {
     }
 }
 
+
+pub fn invoke(_: &JsValue, args: &[JsValue], ctx: &mut Context) -> JsResult<JsValue> {
+    let arg = args.get(0).unwrap();
+
+    println!("This URI: {}", arg.as_string().unwrap());
+
+    Ok(JsValue::String(JsString::from("Hello, world!")))
+}
+
 #[cfg(test)]
 mod tests {
+    use boa_engine::Context;
     use polywrap_wasm_rs::JSON::json;
 
+    use crate::invoke;
     pub use crate::wrap::*;
+    use boa_engine::{
+        native_function::NativeFunction, prelude::JsObject, property::Attribute, Context, JsResult,
+        JsValue, Source,
+    };
+
+    #[test]
+    fn import() {
+        let args = ArgsEval {
+            src: "const null_value = null; null_value".to_string(),
+        };
+
+        // Creating the execution context
+        let mut ctx = Context::default();
+
+        // Adding custom implementation that mimics 'require'
+        ctx.register_global_function("invoke", 0, NativeFunction::from_fn_ptr(invoke))
+            .unwrap();
+
+        // Adding custom object that mimics 'module.exports'
+        let moduleobj = JsObject::default();
+        moduleobj
+            .set("exports", JsValue::from(" "), false, &mut ctx)
+            .unwrap();
+        ctx.register_global_property("module", JsValue::from(moduleobj), Attribute::default())
+            .unwrap();
+
+        // Instantiating the engine with the execution context
+        // Loading, parsing and executing the JS code from the source file
+        ctx.eval(Source::from_bytes(&buffer.unwrap())).unwrap();
+        
+        let result = crate::eval(args);
+
+        let expected = EvalResult {
+            value: Some(json!("null")),
+            error: None
+        };
+        assert_eq!(result.value.unwrap(), expected.value.unwrap());
+    }
 
     #[test]
     fn eval_null() {
@@ -147,22 +202,22 @@ mod tests {
     #[test]
     fn eval_object() {
         let args = ArgsEval {
-            src: "const obj = { prop1: 1, prop2: 'hello' }; obj".to_string(),
+            src: "const obj = { prop1: 1, prop2: 'hello' }; JSON.stringify(obj)".to_string(),
         };
         
         let result = crate::eval(args);
 
-        // let expected = EvalResult {
-        //     value: Some(json!({
-        //         "prop1": 1,
-        //         "prop2": "hello"
-        //     })),
-        //     error: None
-        // };
+        let serialized_obj = json!({
+            "prop1": 1,
+            "prop2": "hello"
+        });
+    
+        let expected = EvalResult {
+            value: Some(json!(serialized_obj.to_string())),
+            error: None
+        };
 
-        // assert_eq!(result.value.unwrap(), expected.value.unwrap());
-
-        assert_eq!(result.value.unwrap(), json!("Object or Symbol"));
+        assert_eq!(result.value.unwrap(), expected.value.unwrap());
     }
 
     #[test]
